@@ -1,0 +1,317 @@
+\documentclass[12pt]{article}
+% \usepackage[sc]{mathpazo}
+% \usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{amsmath, amssymb, mathtools }
+\usepackage{enumerate}
+\usepackage{float}
+\usepackage{cleveref}
+\usepackage{fancyhdr}
+\usepackage{verbatim}
+\usepackage{color}
+\usepackage{pstricks}
+\usepackage{eqnarray}
+\usepackage{psfrag}
+\usepackage{epsfig,epsf}
+\usepackage{pstricks}
+\usepackage{hyperref}
+\begin{document}
+
+
+<<setup, include=FALSE, cache=FALSE>>=
+  # set global chunk options
+  opts_chunk$set(fig.path='figure/minimal-', fig.align='center', fig.show='hold')
+options(replace.assign=TRUE,width=90)
+@
+
+\title{Final STAT547 Spring2014}
+
+\author{Yet Nguyen}
+
+\maketitle
+<<echo=FALSE>>=
+options(width=80)
+
+@
+\section{Introduction}
+In this project, we will analyze the dataset \texttt{aemet} which is available in the package \texttt{fda.usc} (Functional Data Analysis and Utilities for Statistical Computing) developed by Manuel Oviedo de la Fuente et al. . The dataset is the series of daily summaries of 73 Spanish weather stations selected for the period 1980-2009. The dataset contains geographic information of each station and the average for the period 1980-2009 of daily temperature, daily precipitation and daily wind speed. The data come originally from Meteorological State Agency of Spain (AEMET) (\url{ http://www.aemet.es/}). 
+
+Precipitation is the amount of watter that falls down from clouds. Previous research suggests that the temperature substantially affect precipitation. 
+For instance, according to wikipedia: "during the Last Glacial Maximum of 18,000 years ago, thermal-driven evaporation from the oceans onto continental landmasses was low, causing large areas of extreme desert, including polar deserts (cold but with low rates of precipitation). In contrast, the world's climate was wetter than today near the start of the warm Atlantic Period of 8000 years ago. 
+
+In this project, we will look at the relationship between precipitation 
+and temperature under the functional data analysis point of view. In particular,
+we will investigate the functional structure of those two quantities over daily
+measures for the period 1980-2009 by principal component analysis. And then we will do a functional linear models in the two forms. The first one is  scale response precipitation
+(calculated as average precipitation over time) vs. temperature curves. The 
+second one is functional response precipitation vs. functional predictor temperature. 
+
+\section{Scatter plot of the two functional datasets}
+
+First of all, we can look at the two datasets and their relation which is shown in 
+Figures \ref{fig:tempprecplot1} and \ref{fig:tempprecplot2}
+
+<<librarycall,echo=FALSE,warning=FALSE,message=FALSE,error=FALSE>>=
+library(fda.usc)
+library(reshape)
+library(ggplot2)
+@
+
+<<tempprecplot1, fig.cap='Scatter plot of temperature and log precipitation data', cache=TRUE, results='hide',echo=FALSE,fig.pos='H',fig.height=4,fig.width=8>>=
+
+data(aemet)
+
+par(mfrow=c(1,2))
+plot(aemet$temp)
+plot(aemet$logprec)
+
+
+@
+
+
+<<tempprecplot2, fig.cap ='Relationship between temperature and precipitation', echo=FALSE,fig.pos='H',fig.height=3,fig.width=8>>=
+dat2 <- cbind(melt(aemet$temp$data), logprec =melt(aemet$logprec$data)$value)
+colnames(dat2)[3] <- "temperature"
+ggplot(dat2, aes(x = temperature, y = logprec, group = as.factor(X1), colour = as.factor(X1))) + geom_line() +
+   guides(colour=FALSE)+ labs(title = "Logprec vs. Temp")
+
+@
+
+\section{Covariance modelling and Principle Component Analysis for Temperature and Repricipitation}
+73 curves of each dataset have 365 time points, therefore, we can consider those as \textit{dense} functional data, hence we will use Ramsay and Silverman's Approach to obtain the estimated mean and variance matrix of each data set. 
+
+\subsection{Analysis for Temperature}
+The estimated mean and covariance is shown in Figure \ref{fig:covtemp}. 
+
+<<covtemp,echo=FALSE,results='hide',fig.cap='Estimated Mean and Covariance for Temperature data.', fig.pos= 'H',fig.height=5,fig.width=6>>=
+library(fda)
+
+#  -------------  set up fourier basis  ---------------------------
+#  Here it was decided that 65 basis functions captured enough of
+#  the detail in the temperature data: about one basis function
+#  per week.
+
+#  The use of only 65 basis functions instead of 365
+#  automatically generates some smoothing.
+
+#  However, see below for smoothing with a saturated
+#  basis (365 basis functions) where smoothing is defined by the
+#  GCV criterion.
+
+daybasis65 <- create.fourier.basis(rangeval=c(0, 365), nbasis=65)
+
+#  -----------  set up the harmonic acceleration operator  ----------
+
+harmaccelLfd365 <- vec2Lfd(c(0,(2*pi/365)^2,0), c(0, 365))
+
+#  ---------  create fd objects for temp. and prec. ---------------
+
+
+# Consistent with a strong annual cycle
+# plus weaker normal noise
+aemet$temp
+dim( CanadianWeather$dailyAv[,,"Temperature.C"])
+str( CanadianWeather$dailyAv[,,"Temperature.C"])
+dim(aemet$temp)
+daytempfd <- smooth.basis(day.5, t(aemet$temp$data),
+                          daybasis65, fdnames=list("Day", "Station", "Deg C"))$fd
+# plot(daytempfd, axes=FALSE)
+# axisIntervals(1)
+# axis(2)
+
+
+
+
+#  --  compute and plot mean and standard deviation of temperature -------
+
+(tempmeanfd  <- mean.fd(daytempfd))
+(tempstdvfd  <- sd.fd(daytempfd))
+
+op <- par(mfrow=c(2,2))
+plot(tempmeanfd,               main="Mean")
+plot(tempstdvfd, main="Standard Deviation", log="y")
+
+
+#  --  plot the temperature variance-covariance bivariate function  ----
+
+str(tempvarbifd <- var.fd(daytempfd))
+str(tempvarmat  <- eval.bifd(weeks,weeks,tempvarbifd))
+# dim(tempvarmat)= c(53, 53)
+
+#op <- par(mfrow=c(1,2), pty="s")
+#contour(tempvarmat, xlab="Days", ylab="Days")
+contour(weeks, weeks, tempvarmat,
+        xlab="Temperature by day",
+        ylab="Temperature by day",
+        main=paste("Variance function across stations"
+                   ),
+        cex.main=0.8, axes=FALSE)
+axisIntervals(1, atTick1=seq(0, 365, length=5), atTick2=NA,
+              atLabels=seq(1/8, 1, 1/4)*365,
+              labels=paste("Q", 1:4) )
+axisIntervals(2, atTick1=seq(0, 365, length=5), atTick2=NA,
+              atLabels=seq(1/8, 1, 1/4)*365,
+              labels=paste("Q", 1:4) )
+#persp(tempvarmat,xlab="Days", ylab="Days", zlab="Covariance")
+persp(weeks, weeks, tempvarmat,
+      xlab="Days", ylab="Days", zlab="Covariance")
+mtext("Temperature Covariance", line=-4, outer=TRUE)
+par(op)
+
+@
+The estimated eigenvalues and eigenfunctions of temperature data are shown in Figure \ref{fig:eigentemp}.
+
+<<eigentemp, fig.cap ='Estimated eigenvalues and eigenfunctions of temperature data.', echo=FALSE,results='hide',fig.pos= 'H',fig.height=4,fig.width=8>>=
+
+################################################################
+
+#  -----------------------------------------------------------------------
+#               PCA of temperatures with varimax rotation
+#  -----------------------------------------------------------------------
+
+harmfdPar     <- fdPar(daybasis65, harmaccelLfd365, 1e5)
+
+daytemppcaobj <- pca.fd(daytempfd, nharm=4, harmfdPar)
+
+#daytemppcaobjVM <- varmx.pca.fd(daytemppcaobj)
+
+#str(daytemppcaobj)
+dimnames(daytemppcaobj$scores)[[2]] <- paste("PCA", 1:4, sep=".")
+#round(daytemppcaobj$scores)
+
+
+# plot principle components
+op <- par(mfrow=c(1,2), pty="m")
+
+#  plot harmonics/eigenfunctions
+
+plot(daytemppcaobj$harmonics)
+
+#  plot log eigenvalues
+
+daytempeigvals <- daytemppcaobj[[2]]
+
+plot(1:20, log10(daytempeigvals[1:20]), type="b",
+     xlab="Eigenvalue Number", ylab="Log 10 Eigenvalue")
+abline(lsfit(5:20, log10(daytempeigvals[5:20])), lty=2)
+
+par(op)
+@
+
+\subsection{Analysis for Temperature}
+The estimated mean and covariance is shown in Figure \ref{fig:covtemp}. 
+
+<<covprec,echo=FALSE,results='hide',fig.cap='Estimated Mean and Covariance for Precipitation data.', fig.pos= 'H',fig.height=5,fig.width=6>>=
+library(fda)
+
+#  -------------  set up fourier basis  ---------------------------
+#  Here it was decided that 65 basis functions captured enough of
+#  the detail in the temperature data: about one basis function
+#  per week.
+
+#  The use of only 65 basis functions instead of 365
+#  automatically generates some smoothing.
+
+#  However, see below for smoothing with a saturated
+#  basis (365 basis functions) where smoothing is defined by the
+#  GCV criterion.
+
+daybasis65 <- create.fourier.basis(rangeval=c(0, 365), nbasis=65)
+
+#  -----------  set up the harmonic acceleration operator  ----------
+
+harmaccelLfd365 <- vec2Lfd(c(0,(2*pi/365)^2,0), c(0, 365))
+
+#  ---------  create fd objects for temp. and prec. ---------------
+
+
+# Consistent with a strong annual cycle
+# plus weaker normal noise
+
+daytempfd <- smooth.basis(day.5, t(aemet$logprec$data),
+                          daybasis65, fdnames=list("Day", "Station", "Deg C"))$fd
+# plot(daytempfd, axes=FALSE)
+# axisIntervals(1)
+# axis(2)
+
+
+
+
+#  --  compute and plot mean and standard deviation of temperature -------
+
+(tempmeanfd  <- mean.fd(daytempfd))
+(tempstdvfd  <- sd.fd(daytempfd))
+
+op <- par(mfrow=c(2,2))
+plot(tempmeanfd,               main="Mean")
+plot(tempstdvfd, main="Standard Deviation", log="y")
+
+
+#  --  plot the temperature variance-covariance bivariate function  ----
+
+str(tempvarbifd <- var.fd(daytempfd))
+str(tempvarmat  <- eval.bifd(weeks,weeks,tempvarbifd))
+# dim(tempvarmat)= c(53, 53)
+
+#op <- par(mfrow=c(1,2), pty="s")
+#contour(tempvarmat, xlab="Days", ylab="Days")
+contour(weeks, weeks, tempvarmat,
+        xlab="Temperature by day",
+        ylab="Temperature by day",
+        main=paste("Variance function across stations"
+                   ),
+        cex.main=0.8, axes=FALSE)
+axisIntervals(1, atTick1=seq(0, 365, length=5), atTick2=NA,
+              atLabels=seq(1/8, 1, 1/4)*365,
+              labels=paste("Q", 1:4) )
+axisIntervals(2, atTick1=seq(0, 365, length=5), atTick2=NA,
+              atLabels=seq(1/8, 1, 1/4)*365,
+              labels=paste("Q", 1:4) )
+#persp(tempvarmat,xlab="Days", ylab="Days", zlab="Covariance")
+persp(weeks, weeks, tempvarmat,
+      xlab="Days", ylab="Days", zlab="Covariance")
+mtext("Temperature Covariance", line=-4, outer=TRUE)
+par(op)
+
+@
+The estimated eigenvalues and eigenfunctions of temperature data are shown in Figure \ref{fig:eigentemp}.
+
+<<eigentemp, fig.cap ='Estimated eigenvalues and eigenfunctions of temperature data.', echo=FALSE,results='hide',fig.pos= 'H',fig.height=4,fig.width=8>>=
+
+################################################################
+
+#  -----------------------------------------------------------------------
+#               PCA of temperatures with varimax rotation
+#  -----------------------------------------------------------------------
+
+harmfdPar     <- fdPar(daybasis65, harmaccelLfd365, 1e5)
+
+daytemppcaobj <- pca.fd(daytempfd, nharm=4, harmfdPar)
+
+#daytemppcaobjVM <- varmx.pca.fd(daytemppcaobj)
+
+#str(daytemppcaobj)
+dimnames(daytemppcaobj$scores)[[2]] <- paste("PCA", 1:4, sep=".")
+#round(daytemppcaobj$scores)
+
+
+# plot principle components
+op <- par(mfrow=c(1,2), pty="m")
+
+#  plot harmonics/eigenfunctions
+
+plot(daytemppcaobj$harmonics)
+
+#  plot log eigenvalues
+
+daytempeigvals <- daytemppcaobj[[2]]
+
+plot(1:20, log10(daytempeigvals[1:20]), type="b",
+     xlab="Eigenvalue Number", ylab="Log 10 Eigenvalue")
+abline(lsfit(5:20, log10(daytempeigvals[5:20])), lty=2)
+
+par(op)
+@
+
+
+\end{document}
