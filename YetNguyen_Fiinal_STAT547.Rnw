@@ -327,14 +327,14 @@ Looking at the Figures \ref{fig:covtemp}, \ref{fig:eigentemp}, \ref{fig:covprec}
 \ref{fig:eigenprec}, we can see that the behavior of \textit{temperature} and \textit{precipitation} are differently in the opposite direction, i.e., somehow "negative" correlation, both in the average mean curve and covariance surface.These conclusions do support the hypotheses that there is negative correlation between temperature and precipitation. 
 In the next sections, we will investigate the functional regression relation between these two functional datasets.
 
-\section{Functional Linear Model with Functional Covariate as Temperature and Scalar Response as Log of Total Precipitation}
+\section{Functional Linear Model with Functional Covariate as Temperature and Scalar Response as Log of Total Precipitation:Ramsay and Silverman's Approach and Principle Component Analysis Approach}
 Figure \ref{fig:totalprec} shows the scatter plot of log of total precipitation.
 
 <<totalprec,echo=FALSE, cache = TRUE, fig.cap='Scatter plot of Log of Total Precipitation.', fig.height=5, fig.width=5,fig.pos='H'>>=
 prectotal <- log(apply(exp(aemet$logprec$data), 1, sum))
 plot(prectotal, main = "Scatter Plot of log of Total Precipitation")
 @
-\subsection{Ramsay and Silverman's Approach}
+
 
 In this section, we will fit a functional linear model where scalar response is 
 the logarithm of total of precipitation, and  functional covariate is temperature 
@@ -343,11 +343,9 @@ for the functional covariate, and without penalty. The generalized cross validat
 used to obtain optimal number of basis functions. The result of mean square error for
 the prediction is 2.081e-15.
 
-
-
-\subsection{Principle Component Analysis Approach}
-
-
+Moreover, we also use Principle Component Analysis to fit the linear model,the selection  is 
+performed by cross-validation to choose the best principle components, then the 
+mean square error of the prediction under PCA approach is 
 <<rstotalprec,echo=FALSE, cache = TRUE, fig.cap='Fitted Values by Ramsay Silverman s Approach and PCA Approach.', fig.height=4, fig.width=8,fig.pos='H'>>=
 par(mfrow = c(1,2))
 fregre.cv.out <- fregre.basis.cv(aemet$temp, prectotal)
@@ -358,7 +356,7 @@ plot(y = fregre.cv.out$fitt, x = prectotal,
      ylab = "Predicted Values")
 abline(a=0,b=1)
 sqrt(mean(fregre.cv.out$fitt- prectotal)^2)
-fregre.pc.cv.out <- fregre.pc.cv(aemet$temp, prectotal, kmax = 50, lambda = TRUE)
+fregre.pc.cv.out <- fregre.pc.cv(aemet$temp, prectotal, kmax = 30, lambda = TRUE)
 
 plot(y = fregre.pc.cv.out$fregre.pc$fitt, x = prectotal, 
      xlab ="log total precipitation", 
@@ -366,8 +364,8 @@ plot(y = fregre.pc.cv.out$fregre.pc$fitt, x = prectotal,
      ylab = "Predicted Values")
 abline(a=0,b=1)
 sqrt(mean(fregre.pc.cv.out$fregre.pc$fitt- prectotal)^2)
-
 @
+The results of mean square errror and the Figure \ref{fig:rstotalprec} supports that the 
 
 
 \end{document}
