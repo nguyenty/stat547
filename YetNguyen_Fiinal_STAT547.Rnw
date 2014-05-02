@@ -24,7 +24,9 @@
 options(replace.assign=TRUE,width=90)
 @
 
-\title{Final STAT547 Spring2014}
+\title{Final STAT547 Spring2014\\
+On the Relation between Temperature and Precipitation from 73 Spanish Weather Station
+}
 
 \author{Yet Nguyen}
 
@@ -37,7 +39,7 @@ options(width=80)
 In this project, we will analyze the dataset \texttt{aemet} which is available in the package \texttt{fda.usc} (Functional Data Analysis and Utilities for Statistical Computing) developed by Manuel Oviedo de la Fuente et al. . The dataset is the series of daily summaries of 73 Spanish weather stations selected for the period 1980-2009. The dataset contains geographic information of each station and the average for the period 1980-2009 of daily temperature, daily precipitation and daily wind speed. The data come originally from Meteorological State Agency of Spain (AEMET) (\url{ http://www.aemet.es/}). 
 
 Precipitation is the amount of watter that falls down from clouds. Previous research suggests that the temperature substantially affect precipitation. 
-For instance, according to wikipedia: "during the Last Glacial Maximum of 18,000 years ago, thermal-driven evaporation from the oceans onto continental landmasses was low, causing large areas of extreme desert, including polar deserts (cold but with low rates of precipitation). In contrast, the world's climate was wetter than today near the start of the warm Atlantic Period of 8000 years ago. 
+For instance, according to wikipedia: "during the Last Glacial Maximum of 18,000 years ago, thermal-driven evaporation from the oceans onto continental landmasses was low, causing large areas of extreme desert, including polar deserts (cold but with low rates of precipitation). In contrast, the world's climate was wetter than today near the start of the warm Atlantic Period of 8000 years ago." 
 
 In this project, we will look at the relationship between precipitation 
 and temperature under the functional data analysis point of view. In particular,
@@ -57,7 +59,7 @@ library(reshape)
 library(ggplot2)
 @
 
-<<tempprecplot1, fig.cap='Scatter plot of temperature and log precipitation data', cache=TRUE, results='hide',echo=FALSE,fig.pos='H',fig.height=4,fig.width=8>>=
+<<tempprecplot1, fig.cap='Scatter plot of temperature and log precipitation data', cache=TRUE, results='hide',echo=FALSE,fig.pos='H',fig.height=4,fig.width=8,cache=TRUE>>=
 
 data(aemet)
 
@@ -69,11 +71,11 @@ plot(aemet$logprec)
 @
 
 
-<<tempprecplot2, fig.cap ='Relationship between temperature and precipitation', echo=FALSE,fig.pos='H',fig.height=3,fig.width=8>>=
+<<tempprecplot2, fig.cap ='Relationship between temperature and precipitation', echo=FALSE,fig.pos='H',fig.height=3,fig.width=8,cache=TRUE>>=
 dat2 <- cbind(melt(aemet$temp$data), logprec =melt(aemet$logprec$data)$value)
 colnames(dat2)[3] <- "temperature"
 ggplot(dat2, aes(x = temperature, y = logprec, group = as.factor(X1), colour = as.factor(X1))) + geom_line() +
-   guides(colour=FALSE)+ labs(title = "Logprec vs. Temp")
+   guides(colour=FALSE)+ labs(title = "Logprec vs. Temperature")
 
 @
 
@@ -83,7 +85,7 @@ ggplot(dat2, aes(x = temperature, y = logprec, group = as.factor(X1), colour = a
 \subsection{Analysis for Temperature}
 The estimated mean and covariance is shown in Figure \ref{fig:covtemp}. 
 
-<<covtemp,echo=FALSE,results='hide',fig.cap='Estimated Mean and Covariance for Temperature data.', fig.pos= 'H',fig.height=5,fig.width=6>>=
+<<covtemp,echo=FALSE,results='hide',fig.cap='Estimated Mean and Covariance for Temperature data.', fig.pos= 'H',fig.height=5,fig.width=6,cache=TRUE>>=
 library(fda)
 
 #  -------------  set up fourier basis  ---------------------------
@@ -154,14 +156,15 @@ axisIntervals(2, atTick1=seq(0, 365, length=5), atTick2=NA,
               labels=paste("Q", 1:4) )
 #persp(tempvarmat,xlab="Days", ylab="Days", zlab="Covariance")
 persp(weeks, weeks, tempvarmat,
-      xlab="Days", ylab="Days", zlab="Covariance")
+      xlab="Days", ylab="Days", zlab="Covariance", 
+      main = "Covariance surface")
 mtext("Temperature Covariance", line=-4, outer=TRUE)
 par(op)
 
 @
 The estimated eigenvalues and eigenfunctions of temperature data are shown in Figure \ref{fig:eigentemp}.
 
-<<eigentemp, fig.cap ='Estimated eigenvalues and eigenfunctions of temperature data.', echo=FALSE,results='hide',fig.pos= 'H',fig.height=4,fig.width=8>>=
+<<eigentemp, fig.cap ='Estimated eigenvalues and eigenfunctions of temperature data.', echo=FALSE,results='hide',fig.pos= 'H',fig.height=4,fig.width=8,cache=TRUE>>=
 
 ################################################################
 
@@ -185,23 +188,25 @@ op <- par(mfrow=c(1,2), pty="m")
 
 #  plot harmonics/eigenfunctions
 
-plot(daytemppcaobj$harmonics)
+plot(daytemppcaobj$harmonics, main = "Eigenfunctions",
+     xlab = "day")
 
 #  plot log eigenvalues
 
 daytempeigvals <- daytemppcaobj[[2]]
 
 plot(1:20, log10(daytempeigvals[1:20]), type="b",
-     xlab="Eigenvalue Number", ylab="Log 10 Eigenvalue")
+     xlab="Eigenvalue Number", ylab="Log 10 Eigenvalue",
+     main = "Eigenvalues")
 abline(lsfit(5:20, log10(daytempeigvals[5:20])), lty=2)
 
 par(op)
 @
 
-\subsection{Analysis for Temperature}
-The estimated mean and covariance is shown in Figure \ref{fig:covtemp}. 
+\subsection{Analysis for Precipitation}
+The estimated mean and covariance is shown in Figure \ref{fig:covprec}. 
 
-<<covprec,echo=FALSE,results='hide',fig.cap='Estimated Mean and Covariance for Precipitation data.', fig.pos= 'H',fig.height=5,fig.width=6>>=
+<<covprec,echo=FALSE,results='hide',fig.cap='Estimated Mean and Covariance for Precipitation data.', fig.pos= 'H',fig.height=5,fig.width=6,cache=TRUE>>=
 library(fda)
 
 #  -------------  set up fourier basis  ---------------------------
@@ -222,42 +227,42 @@ daybasis65 <- create.fourier.basis(rangeval=c(0, 365), nbasis=65)
 
 harmaccelLfd365 <- vec2Lfd(c(0,(2*pi/365)^2,0), c(0, 365))
 
-#  ---------  create fd objects for temp. and prec. ---------------
+#  ---------  create fd objects for prec. and prec. ---------------
 
 
 # Consistent with a strong annual cycle
 # plus weaker normal noise
 
-daytempfd <- smooth.basis(day.5, t(aemet$logprec$data),
-                          daybasis65, fdnames=list("Day", "Station", "Deg C"))$fd
-# plot(daytempfd, axes=FALSE)
+dayprecfd <- smooth.basis(day.5, t(aemet$logprec$data),
+                          daybasis65, fdnames=list("Day", "Station", "Logprec"))$fd
+# plot(dayprecfd, axes=FALSE)
 # axisIntervals(1)
 # axis(2)
 
 
 
 
-#  --  compute and plot mean and standard deviation of temperature -------
+#  --  compute and plot mean and standard deviation of precerature -------
 
-(tempmeanfd  <- mean.fd(daytempfd))
-(tempstdvfd  <- sd.fd(daytempfd))
+precmeanfd  <- mean.fd(dayprecfd)
+precstdvfd  <- sd.fd(dayprecfd)
 
 op <- par(mfrow=c(2,2))
-plot(tempmeanfd,               main="Mean")
-plot(tempstdvfd, main="Standard Deviation", log="y")
+plot(precmeanfd,               main="Mean")
+plot(precstdvfd, main="Standard Deviation", log="y")
 
 
 #  --  plot the temperature variance-covariance bivariate function  ----
 
-str(tempvarbifd <- var.fd(daytempfd))
-str(tempvarmat  <- eval.bifd(weeks,weeks,tempvarbifd))
-# dim(tempvarmat)= c(53, 53)
+precvarbifd <- var.fd(dayprecfd)
+precvarmat  <- eval.bifd(weeks,weeks,precvarbifd)
+# dim(precvarmat)= c(53, 53)
 
 #op <- par(mfrow=c(1,2), pty="s")
-#contour(tempvarmat, xlab="Days", ylab="Days")
-contour(weeks, weeks, tempvarmat,
-        xlab="Temperature by day",
-        ylab="Temperature by day",
+#contour(precvarmat, xlab="Days", ylab="Days")
+contour(weeks, weeks, precvarmat,
+        xlab="Precipitation by day",
+        ylab="Precipitation by day",
         main=paste("Variance function across stations"
                    ),
         cex.main=0.8, axes=FALSE)
@@ -268,15 +273,18 @@ axisIntervals(2, atTick1=seq(0, 365, length=5), atTick2=NA,
               atLabels=seq(1/8, 1, 1/4)*365,
               labels=paste("Q", 1:4) )
 #persp(tempvarmat,xlab="Days", ylab="Days", zlab="Covariance")
-persp(weeks, weeks, tempvarmat,
-      xlab="Days", ylab="Days", zlab="Covariance")
-mtext("Temperature Covariance", line=-4, outer=TRUE)
+persp(weeks, weeks, precvarmat,
+      xlab="Days", ylab="Days", 
+      zlab="Covariance",
+      main = "Surface Covariance")
+mtext("Precipitation Covariance", line=-4, outer=TRUE)
 par(op)
 
 @
-The estimated eigenvalues and eigenfunctions of temperature data are shown in Figure \ref{fig:eigentemp}.
 
-<<eigentemp, fig.cap ='Estimated eigenvalues and eigenfunctions of temperature data.', echo=FALSE,results='hide',fig.pos= 'H',fig.height=4,fig.width=8>>=
+The estimated eigenvalues and eigenfunctions of precipitation data are shown in Figure \ref{fig:eigenprec}.
+
+<<eigenprec, fig.cap ='Estimated eigenvalues and eigenfunctions of precipitation data.', echo=FALSE,results='hide',fig.pos= 'H',fig.height=4,fig.width=8,cache=TRUE>>=
 
 ################################################################
 
@@ -286,13 +294,13 @@ The estimated eigenvalues and eigenfunctions of temperature data are shown in Fi
 
 harmfdPar     <- fdPar(daybasis65, harmaccelLfd365, 1e5)
 
-daytemppcaobj <- pca.fd(daytempfd, nharm=4, harmfdPar)
+dayprecpcaobj <- pca.fd(dayprecfd, nharm=4, harmfdPar)
 
-#daytemppcaobjVM <- varmx.pca.fd(daytemppcaobj)
+#dayprecpcaobjVM <- varmx.pca.fd(dayprecpcaobj)
 
-#str(daytemppcaobj)
-dimnames(daytemppcaobj$scores)[[2]] <- paste("PCA", 1:4, sep=".")
-#round(daytemppcaobj$scores)
+#str(dayprecpcaobj)
+dimnames(dayprecpcaobj$scores)[[2]] <- paste("PCA", 1:4, sep=".")
+#round(dayprecpcaobj$scores)
 
 
 # plot principle components
@@ -300,17 +308,65 @@ op <- par(mfrow=c(1,2), pty="m")
 
 #  plot harmonics/eigenfunctions
 
-plot(daytemppcaobj$harmonics)
+plot(dayprecpcaobj$harmonics, xlab = "day", 
+     main = "Eigenfunctions")
 
 #  plot log eigenvalues
 
-daytempeigvals <- daytemppcaobj[[2]]
+daypreceigvals <- dayprecpcaobj[[2]]
 
-plot(1:20, log10(daytempeigvals[1:20]), type="b",
-     xlab="Eigenvalue Number", ylab="Log 10 Eigenvalue")
-abline(lsfit(5:20, log10(daytempeigvals[5:20])), lty=2)
+plot(1:20, log10(daypreceigvals[1:20]), type="b",
+     xlab="Eigenvalue Number", ylab="Log 10 Eigenvalue",
+     main = "eigenvalues")
+abline(lsfit(5:20, log10(daypreceigvals[5:20])), lty=2)
 
 par(op)
+@
+
+Looking at the Figures \ref{fig:covtemp}, \ref{fig:eigentemp}, \ref{fig:covprec}, and 
+\ref{fig:eigenprec}, we can see that the behavior of \textit{temperature} and \textit{precipitation} are differently in the opposite direction, i.e., somehow "negative" correlation, both in the average mean curve and covariance surface.These conclusions do support the hypotheses that there is negative correlation between temperature and precipitation. 
+In the next sections, we will investigate the functional regression relation between these two functional datasets.
+
+\section{Functional Linear Model with Functional Covariate as Temperature and Scalar Response as Log of Total Precipitation}
+Figure \ref{fig:totalprec} shows the scatter plot of log of total precipitation.
+
+<<totalprec,echo=FALSE, cache = TRUE, fig.cap='Scatter plot of Log of Total Precipitation.', fig.height=5, fig.width=5,fig.pos='H'>>=
+prectotal <- log(apply(exp(aemet$logprec$data), 1, sum))
+plot(prectotal, main = "Scatter Plot of log of Total Precipitation")
+@
+\subsection{Ramsay and Silverman's Approach}
+
+In this section, we will fit a functional linear model where scalar response is 
+the logarithm of total of precipitation, and  functional covariate is temperature 
+curves using Ramsay and Silverman's approach. In particular, we choose Bspline basis
+for the functional covariate, and without penalty. The generalized cross validation is 
+used to obtain optimal number of basis functions. The result of mean square error for
+the prediction is 2.081e-15.
+
+
+
+\subsection{Principle Component Analysis Approach}
+
+
+<<rstotalprec,echo=FALSE, cache = TRUE, fig.cap='Fitted Values by Ramsay Silverman s Approach and PCA Approach.', fig.height=4, fig.width=8,fig.pos='H'>>=
+par(mfrow = c(1,2))
+fregre.cv.out <- fregre.basis.cv(aemet$temp, prectotal)
+
+plot(y = fregre.cv.out$fitt, x = prectotal, 
+     xlab ="log total precipitation", 
+     main = "Prediction by Ramsay Silverman's approach",
+     ylab = "Predicted Values")
+abline(a=0,b=1)
+sqrt(mean(fregre.cv.out$fitt- prectotal)^2)
+fregre.pc.cv.out <- fregre.pc.cv(aemet$temp, prectotal, kmax = 30, lambda = TRUE)
+
+plot(y = fregre.pc.cv.out$fitt, x = prectotal, 
+     xlab ="log total precipitation", 
+     main = "Prediction by Principle Component Analysis approach",
+     ylab = "Predicted Values")
+abline(a=0,b=1)
+sqrt(mean(fregre.pc.cv.out$fitt- prectotal)^2)
+
 @
 
 
