@@ -354,18 +354,18 @@ fregre.cv.out <- fregre.basis.cv(aemet$temp, prectotal)
 
 plot(y = fregre.cv.out$fitt, x = prectotal, 
      xlab ="log total precipitation", 
-     main = "Prediction by Ramsay Silverman's approach",
+     main = "Ramsay Silverman's approach",
      ylab = "Predicted Values")
 abline(a=0,b=1)
 sqrt(mean(fregre.cv.out$fitt- prectotal)^2)
-fregre.pc.cv.out <- fregre.pc.cv(aemet$temp, prectotal, kmax = 30, lambda = TRUE)
+fregre.pc.cv.out <- fregre.pc.cv(aemet$temp, prectotal, kmax = 50, lambda = TRUE)
 
-plot(y = fregre.pc.cv.out$fitt, x = prectotal, 
+plot(y = fregre.pc.cv.out$fregre.pc$fitt, x = prectotal, 
      xlab ="log total precipitation", 
-     main = "Prediction by Principle Component Analysis approach",
+     main = "PCA approach",
      ylab = "Predicted Values")
 abline(a=0,b=1)
-sqrt(mean(fregre.pc.cv.out$fitt- prectotal)^2)
+sqrt(mean(fregre.pc.cv.out$fregre.pc$fitt- prectotal)^2)
 
 @
 
